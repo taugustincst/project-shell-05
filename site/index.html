@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lost Property Office</title>
+  <meta name="description" content="Every lost thing has a story. Check claims against the log and stamp.">
+  <meta name="theme-color" content="#f3ecdc">
+  <link rel="icon" href="img/icon-192.png">
+  <meta property="og:title" content="Lost Property Office">
+  <meta property="og:description" content="Every lost thing has a story. Check claims against the log and stamp.">
+  <meta property="og:image" content="img/feature-graphic-1024x500.png">
+  <style>
+    :root { --bg: #f3ecdc; --fg: #1d1a16; --muted: #5b544a; --panel: rgba(0,0,0,0.05); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg);
+      font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+    .hero img { display: block; width: 100%; height: auto; border-radius: 12px; }
+    header { display: flex; gap: 16px; align-items: center; margin: 24px 0 8px; }
+    header img { width: 72px; height: 72px; border-radius: 16px; }
+    h1 { margin: 0; font-size: 1.8rem; line-height: 1.2; }
+    .short { margin: 4px 0 0; color: var(--muted); }
+    .get { display: inline-block; margin: 20px 0 8px; padding: 12px 22px; border-radius: 999px;
+      background: var(--fg); color: var(--bg); font-weight: 600; text-decoration: none; }
+    .get:focus-visible, .get:hover { outline: 3px solid var(--muted); outline-offset: 2px; }
+    .note { margin: 0 0 24px; color: var(--muted); font-size: 0.9rem; }
+    .shots { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 220px);
+      gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+    figure { margin: 0; scroll-snap-align: start; }
+    figure img { display: block; width: 100%; height: auto; border-radius: 10px; }
+    figcaption { margin-top: 6px; font-size: 0.85rem; color: var(--muted); }
+    .about { margin-top: 28px; padding: 4px 20px; border-radius: 12px; background: var(--panel); }
+    footer { margin-top: 32px; font-size: 0.9rem; color: var(--muted); }
+    footer a { color: inherit; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="hero"><img src="img/feature-graphic-1024x500.png" alt="" width="1024" height="500"></div>
+    <header>
+      <img src="img/icon-192.png" alt="" width="72" height="72">
+      <div>
+        <h1>Lost Property Office</h1>
+        <p class="short">Every lost thing has a story. Check claims against the log and stamp.</p>
+      </div>
+    </header>
+    <a class="get" href="https://play.google.com/store/apps/details?id=com.taugustincst.lostproperty">Get it on Google Play</a>
+    <p class="note">Lost Property Office is played in the Android app.</p>
+    <section class="shots" aria-label="Screenshots">
+        <figure><img src="img/screenshot-01-match.png" alt="Match the claim against the log, then stamp" loading="lazy" width="540" height="1170"><figcaption>Match the claim against the log, then stamp</figcaption></figure>
+        <figure><img src="img/screenshot-02-claim.png" alt="30-day story · hundreds of lost things" loading="lazy" width="540" height="1170"><figcaption>30-day story · hundreds of lost things</figcaption></figure>
+        <figure><img src="img/screenshot-03-return.png" alt="Standing Orders make every stamp provable" loading="lazy" width="540" height="1170"><figcaption>Standing Orders make every stamp provable</figcaption></figure>
+        <figure><img src="img/screenshot-04-season.png" alt="Reunite the ring with its owner" loading="lazy" width="540" height="1170"><figcaption>Reunite the ring with its owner</figcaption></figure>
+    </section>
+    <section class="about">
+      <p><strong>A cozy deduction game about lost things.</strong> You are the day-shift clerk at a railway lost-property office. Travellers come to your counter describing what they lost, from memory, badly: the wrong colour, the wrong train, the wrong day. One thing they never get wrong is the distinguishing mark.</p>
+      <p><strong>Three documents, one stamp.</strong> Search the shelves, cross-check the found-item log, read the Standing Orders, and stamp: RETURN, HOLD, or FLAG. Any of the three can be lying, including the log. Every stamp is provable from the rules posted at your counter, and the rules grow through the season: insurance forms, closed entries, rival claimants, and the Thursday auction.</p>
+      <p><strong>A season with a story.</strong> Thirty days of claimants, a budget for shelf labels and a kettle, and a lost wedding ring whose story arrives in pieces across a month, until you can put it back on the right hand.</p>
+      <ul><li>No ads, no in-app purchases, no accounts. Pay once.</li><li>Fully offline. Portrait, one-handed, large-text option.</li><li>Thousands of generated objects; thirty authored story days.</li></ul>
+    </section>
+    <footer>
+      <a href="privacy.html">Privacy policy</a>
+    </footer>
+  </main>
+  <script>
+    // Earlier versions of this site installed the game for offline play.
+    // Registering sw.js again replaces that copy with one that clears it.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        if (regs.length) navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
