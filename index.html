@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3ecdc">
+<meta name="description" content="Lost Property Office: a cozy deduction game. Every lost thing has a story. Match claims against the log, spot the frauds, and reunite a lost wedding ring with its owner.">
+<title>Lost Property Office</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app" hidden>
+  <header class="top">
+    <div><h1>Lost Property Office</h1><div class="sub" id="hdr-day">Day 1 of 30</div></div>
+    <div class="meters"><div class="meter"><span>Reputation</span><b id="hdr-rep">10</b></div><div class="meter"><span>Budget</span><b id="hdr-budget">£6</b></div></div>
+  </header>
+
+  <section class="counter" id="counter">
+    <div class="claimant">
+      <div class="who" id="c-name">—</div>
+      <div class="queue" id="c-queue"></div>
+    </div>
+    <p class="speech" id="c-say"></p>
+    <div class="form" id="c-form" hidden><div class="form-title">INSURANCE CLAIM FORM</div><div id="c-form-body"></div></div>
+    <div class="rival" id="c-rival" hidden></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="shelves">Shelves</button>
+    <button class="tab" data-tab="log">Log</button>
+    <button class="tab" data-tab="orders">Orders</button>
+    <button class="tab" data-tab="journal">Journal</button>
+  </nav>
+  <main class="panels">
+    <section id="tab-shelves" class="panel active">
+      <div class="tools"><select id="filter-type" hidden><option value="">All types</option></select><input id="search-shelf" type="search" placeholder="Search by mark…" hidden></div>
+      <div id="shelves" class="shelves"></div>
+    </section>
+    <section id="tab-log" class="panel">
+      <div class="tools"><input id="search-log" type="search" placeholder="Search the log…" hidden><label class="chk" id="phone-wrap" hidden><input type="checkbox" id="phone-filter"> Only this claimant's train</label></div>
+      <div class="loghead">Found-item log · tag · found · train · where · article · status</div>
+      <ol id="log" class="log"></ol>
+    </section>
+    <section id="tab-orders" class="panel"><div id="orders"></div></section>
+    <section id="tab-journal" class="panel"><ol id="journal" class="journal"></ol></section>
+  </main>
+
+  <div class="stampbar" id="stampbar">
+    <div class="selected" id="sel-text">Select an object on the shelves to return it.</div>
+    <div class="stamps">
+      <button class="stamp return" id="st-return" disabled>RETURN</button>
+      <button class="stamp hold" id="st-hold">HOLD</button>
+      <button class="stamp flag" id="st-flag">FLAG</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal-result" hidden><div class="sheet"><div class="stamp-mark" id="r-mark"></div><h2 id="r-title"></h2><p id="r-text"></p><p class="muted" id="r-why"></p><button class="btn primary" id="r-next">Next</button></div></div>
+<div class="modal" id="modal-auction" hidden><div class="sheet"><div class="sheet-date">Thursday</div><h2>Unclaimed-goods auction</h2><p class="muted">Everything unclaimed for fourteen days goes under the hammer at £2 a lot. Tick anything that should wait a little longer.</p><div id="auction-lots"></div><button class="btn primary" id="btn-auction">Hold the auction</button></div></div>
+<div class="modal" id="modal-ledger" hidden><div class="sheet"><div class="sheet-date" id="l-date"></div><h2>Day ledger</h2><div id="l-rows"></div><p id="l-sum"></p><button class="btn primary" id="btn-ledger">Close the ledger</button></div></div>
+<div class="modal" id="modal-morning" hidden><div class="sheet"><div class="sheet-date" id="m-date"></div><h2>Before opening</h2><p class="muted" id="m-news"></p><div id="shop"></div><button class="btn primary" id="btn-open">Open the counter</button><div class="row-btns"><button class="btn" id="btn-settings-large">Large text</button><button class="btn danger" id="btn-newseason">Start a new season</button></div></div></div>
+<div class="modal" id="modal-ending" hidden><div class="sheet"><div class="sheet-date">End of season</div><h2 id="e-title"></h2><p id="e-text"></p><div id="e-stats" class="stats"></div><button class="btn primary" id="btn-again">Another season</button></div></div>
+<div class="modal" id="modal-help" hidden><div class="sheet"><div class="sheet-date">Monday morning</div><h2>Your first day</h2><p>Travellers describe what they lost. Their memory is faulty: colours, trains and days go wrong. The <b>distinguishing mark</b> does not.</p><p>Search the <b>Shelves</b>, cross-check the <b>Log</b>, and stamp: <b>RETURN</b> the one object that fits, <b>HOLD</b> when you cannot prove it, <b>FLAG</b> when the Standing <b>Orders</b> say so.</p><p class="muted">Every stamp is provable from the Orders. New orders arrive through the season.</p><button class="btn primary" id="btn-help">Open the counter</button></div></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
