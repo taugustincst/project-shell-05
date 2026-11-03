@@ -69,3 +69,4 @@ Roster assignment by Folder at Tj's direction, from the 2026-11-02 Google Play n
 
 - **2026-10-28** — Shell created (README.md + this HANDOFF.md). Awaiting project assignment from Tj.
 - **2026-11-02** — ASSIGNED: Lost Property Office (roster #5). Full build brief installed above by Folder. Build priority #4. This is the roster's paid-upfront control title.
+- **2026-11-02** — GitHub Pages ENABLED (workflow deploy, standard static workflow added at .github/workflows/pages.yml). Site: https://taugustincst.github.io/project-shell-05/ — until the game is built, this serves the repo files (README/HANDOFF); the shipped game + privacy.html deploy from this same root.
