@@ -1,9 +1,9 @@
-# project-shell-05
+# Lost Property Office
 
-**Shell repository for a future Claude project.**
+**A cozy Papers, Please — for objects, not people.** Day-shift clerk at a railway lost-property office. Travellers describe lost items with faulty memories; you search the shelves, match claims against the found-item log, spot the frauds, and reunite a lost wedding ring with its owner across a season-long story.
 
-This repo is an empty shell created on 2026-10-28 at Tj's direction. It has no project yet — it exists so that when a project is assigned, the repo, its conventions, and its handoff are already in place.
+Paid on Google Play at $2.99 — pay once, no ads, no in-app purchases, fully offline.
 
-Start with [HANDOFF.md](HANDOFF.md): it explains what this shell is, who works here, and how the project gets defined.
+Status: ASSIGNED 2026-11-02 — build brief is in [HANDOFF.md](HANDOFF.md). Repo rename at ship time (Tj's call).
 
 Owner: Tj (Taylor Augustin) / AugustInnovations LLC.
