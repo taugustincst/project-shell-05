@@ -40,4 +40,4 @@ npm install && node tests/smoke.js
 `localStorage` key `lostproperty.v1`: `{ run, meta, settings }`. Every field is sanitized on load; an unreadable save is copied to `lostproperty.v1.backup` and a fresh season starts.
 
 ## Publishing
-Ships as a Trusted Web Activity (Ironhold pattern); the Android project is not in this repository yet. Pages deploys from `main` via `.github/workflows/pages.yml` (Pages is enabled; live at https://taugustincst.github.io/project-shell-05/). Store copy draft: `store/listing.md`.
+A paid app on Google Play with the whole game packed inside it (`android/play`, see `PLAY.md`). Pages deploys only the store page from `main` (`site/index.html`, the privacy policy `privacy.html` and the store graphics), not the playable game. Store copy: `store/listing.md`.
