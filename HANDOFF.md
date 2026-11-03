@@ -74,3 +74,4 @@ Roster assignment by Folder at Tj's direction, from the 2026-11-02 Google Play n
   - Pages was enabled by Folder on 2026-11-02 (its static workflow is kept as-is; `ci.yml` runs the tests on every non-main push). Live at https://taugustincst.github.io/project-shell-05/ once this merge deploys.
   - **FOR TJ:** (1) Play Console: paid app at $2.99, package name (suggest `com.taugustincst.lostproperty`), upload keystore (Elderon pattern). (2) Confirm contact email elderon@augustinnovations.io in privacy.html.
   - **Next (agent-owned):** Android TWA wrapper from Ironhold's `android/`; phone playtest of days 1–3 for pacing (the "good" band is where first seasons land); final screenshot set and feature graphic; Folder expert review; submission prep.
+- **2026-11-03** — Roster-level handoff for Folder (all eight games, decisions, open items, lessons): https://github.com/taugustincst/taugustincst.github.io/blob/main/ROSTER-HANDOFF.md
