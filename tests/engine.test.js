@@ -35,4 +35,5 @@ t('sanitize survives garbage and round-trips a live season', () => {
   assert.ok(junk); assert.strictEqual(junk.day, D.SEASON_DAYS + 1); assert.strictEqual(junk.rep, 0); assert.strictEqual(junk.warehouse.length, 1); assert.strictEqual(junk.warehouse[0].status, 'shelf'); assert.strictEqual(junk.claimants.length, 0); assert.strictEqual(junk.stats.returns, 0);
 });
 t('every story entry is well-formed', () => { for (const st of D.STORY) { assert.ok(E.typeById[st.item.type], st.who || st.note); assert.ok(D.MARKS.includes(st.item.mark), st.item.mark); if (st.kind === 'claim') assert.ok(D.PROFILES[st.profile] && st.say && st.after, st.who); } });
+t('every story entry names a real train line', () => { for (const st of D.STORY) { const l = st.line === undefined ? 0 : st.line; assert.ok(Number.isInteger(l) && l >= 0 && l < D.LINES.length, (st.who || st.note) + ' line ' + l); } });
 console.log(process.exitCode ? 'SOME FAILED' : `ALL ${n} PASSED`);

@@ -2,7 +2,7 @@
 (function (root) {
 'use strict';
 const D = (typeof LPO_DATA !== 'undefined') ? LPO_DATA : require('./data.js');
-const CAP_BASE = 40, CAP_SHELVING = 12, AUCTION_AGE = 14, AUCTION_DAYS = [22, 29];
+const CAP_BASE = 40, CAP_SHELVING = 12, AUCTION_AGE = 14, AUCTION_DAYS = [22, 29], LATE_DAY = 14;
 const typeById = {}; D.TYPES.forEach(t => { typeById[t.id] = t; }); D.PROHIBITED.forEach(t => { typeById[t.id] = t; });
 const upById = {}; D.UPGRADES.forEach(u => { upById[u.id] = u; });
 
@@ -94,12 +94,18 @@ function describe(s, item, errors, profile) {
   return claim;
 }
 function nameFor(s, used) { let n = pick(s, D.FIRST); for (let i = 0; i < 20 && used[n]; i++) n = pick(s, D.FIRST); used[n] = 1; return n; }
+const up1 = x => x.charAt(0).toUpperCase() + x.slice(1);
+function fill(f, v) { return f.replace(/\{([a-zA-Z])\}/g, (m, k) => { const low = k.toLowerCase(); const val = v[low] == null ? '' : v[low]; return k === low ? val : up1(val); }); }
 function sayFor(s, c) {
-  const t = typeById[c.claim.type], L = D.LINES[c.claim.line];
-  const bits = [`${c.form ? 'I have the insurance form here. ' : ''}${t.a.charAt(0).toUpperCase() + t.a.slice(1)} ${c.claim.colour} ${t.name}${c.claim.material ? ', ' + c.claim.material : ''}.`];
-  bits.push(c.claim.mark ? `You will know it by ${c.claim.mark}.` : 'Nothing special about it that I can think of.');
-  bits.push(`Lost on ${L}, ${c.claim.lossDay === s.day ? 'this morning' : c.claim.lossDay === s.day - 1 ? 'yesterday' : 'on day ' + c.claim.lossDay}.`);
+  const t = typeById[c.claim.type], F = D.FRAMES;
+  const d = c.claim.lossDay === s.day ? 'this morning' : c.claim.lossDay === s.day - 1 ? 'yesterday' : 'on day ' + c.claim.lossDay;
+  const v = { a: t.a, c: c.claim.colour, n: t.name, m: c.claim.material ? ', ' + c.claim.material : '', k: c.claim.mark, l: D.LINES[c.claim.line], d };
+  const bits = [(c.form ? 'I have the insurance form here. ' : '') + fill(pick(s, F.article), v)];
+  bits.push(c.claim.mark ? fill(pick(s, F.mark), v) : pick(s, F.nomark));
+  bits.push(fill(pick(s, F.lost), v));
   bits.push(pick(s, D.PROFILES[c.profile].manner));
+  // the beats come in a different order now and then, as people talk
+  if (rand(s) < 0.3) { const x = bits[1]; bits[1] = bits[2]; bits[2] = x; }
   return bits.join(' ');
 }
 function makeClaimant(s, profile, item, opts) {
@@ -112,8 +118,8 @@ function makeClaimant(s, profile, item, opts) {
 }
 function fraudClaimant(s, used) {
   const kinds = ['wrongmark'];
-  if (orderOn(s, 'o_date')) kinds.push('date', 'date');
-  if (orderOn(s, 'o_returned') && visibleLog(s).some(e => e.status === 'RETURNED' && e.closedDay < s.day)) kinds.push('returned', 'returned');
+  if (orderOn(s, 'o_date')) kinds.push('date', 'date', 'date');
+  if (orderOn(s, 'o_returned') && visibleLog(s).some(e => e.status === 'RETURNED' && e.closedDay < s.day)) kinds.push('returned', 'returned', 'returned');
   if (orderOn(s, 'o_forms')) kinds.push('form', 'form');
   kinds.push('prohibited');
   const kind = pick(s, kinds);
@@ -174,7 +180,7 @@ function startDay(s) {
     if (!pool.length) { addItem(s, genericItem(s), s.day); i--; continue; }
     const item = pick(s, pool);
     const profile = pick(s, ['precise', 'confused', 'confused', 'exaggerator']);
-    if (orderOn(s, 'o_rivals') && !rivalDone && rand(s) < 0.45) {
+    if (orderOn(s, 'o_rivals') && !rivalDone && rand(s) < 0.65) {
       rivalDone = true;
       const a = makeClaimant(s, 'precise', item, { name: nameFor(s, used), errors: 0 }); const b = makeClaimant(s, 'exaggerator', item, { name: nameFor(s, used), errors: 0 });
       const both = rand(s) < 0.25; a.claim.line = item.line; b.claim.line = both ? item.line : (item.line + 1 + Math.floor(rand(s) * (D.LINES.length - 1))) % D.LINES.length;
@@ -183,7 +189,7 @@ function startDay(s) {
     }
     const c = makeClaimant(s, profile, item, { name: nameFor(s, used) });
     if (orderOn(s, 'o_forms') && profile === 'precise' && rand(s) < 0.4) c.form = { type: c.claim.type, colour: c.claim.colour };
-    if (s.day >= 10 && rand(s) < 0.18 && c.claim.mark) { const g = genericItem(s, item.type); g.mark = item.mark; addItem(s, g, s.day); } // two fit: HOLD
+    if (s.day >= 6 && rand(s) < 0.3 && c.claim.mark) { const g = genericItem(s, item.type); g.mark = item.mark; addItem(s, g, s.day); } // two fit: HOLD
     if (!shelf(s).some(it => it.type === item.type && it.tag !== item.tag)) { const g = genericItem(s, item.type); if (g.mark === item.mark) g.mark = pickNot(s, D.MARKS, item.mark); addItem(s, g, s.day); }
     s.claimants.push(c);
   }
@@ -206,12 +212,14 @@ function stamp(s, action, tag) {
     else { dRep = 2; dBudget = 2; s.stats.flags++; text = c.after || `Escalated to the station master. ${right.why}`; }
   } else {
     if (action === 'RETURN') { dRep = -3 + stool; dBudget = -2; s.stats.wrongReturns++; text = right.action === 'RETURN' ? `Wrong object. ${c.name} was too polite to say so at the counter, and wrote to the station master instead.` : (c.profile === 'fraud' ? `${c.name} left quickly with something that was never theirs. ${right.why}` : `That article belonged to someone else. ${right.why}`); }
-    else if (action === 'HOLD') { dRep = -1; s.stats.wrongHolds++; text = right.action === 'RETURN' ? `${c.name} went home without it, and it sat on the shelf. ${right.why}` : `${c.name} walked. ${right.why}`; }
+    else if (action === 'HOLD') { dRep = has(s, 'refit') ? 0 : -1; s.stats.wrongHolds++; text = right.action === 'RETURN' ? `${c.name} went home without it, and it sat on the shelf. ${right.why}` : `${c.name} walked. ${right.why}`; }
     else { dRep = -2 + stool; dBudget = -1; s.stats.wrongFlags++; text = `${c.name} was honest, and is now also upset. ${right.why}`; }
   }
   // apply to the world
   if (action === 'RETURN' && tag) { const it = s.warehouse.find(i => i.tag === tag && i.status === 'shelf'); if (it) { it.status = 'returned'; const e = logEntry(s, tag); e.status = 'RETURNED'; e.closedDay = s.day; if (it.story && !ok) s.flags[it.type + '_lost'] = true; } }
   if (ok && c.story) { if (c.story.endsArc && action === 'RETURN') s.flags.ring_reunited = true; s.storyDone[c.story.day + ':' + c.story.who] = 1; }
+  // from the third week a good office is expected, not admired: correct stamps earn half the reputation
+  if (dRep > 0 && s.day > LATE_DAY) dRep = Math.ceil(dRep / 2);
   s.rep = Math.max(0, Math.min(100, s.rep + dRep)); s.budget = Math.max(0, s.budget + dBudget);
   const r = { name: c.name, action, tag: tag || null, ok, right, dRep, dBudget, text, story: !!c.story };
   s.results.push(r); s.journal.push({ day: s.day, text: `${c.name}: ${action}${ok ? '' : ' (wrong)'}. ${text}` });
@@ -229,6 +237,9 @@ function auction(s, withheld) {
 function endDay(s) {
   if (s.phase !== 'ledger') return false;
   if (has(s, 'kettle')) s.rep = Math.min(100, s.rep + 1);
+  // expectations rise: past the second week, a high reputation drifts back unless the office keeps earning it
+  if (s.day > LATE_DAY && s.rep > 40) s.rep = Math.max(40, s.rep - Math.round((s.rep - 40) * (has(s, 'refit') ? 0.08 : 0.15)));
+  if (has(s, 'clock') && s.results.length && s.results.every(r => r.ok)) s.budget += 1;
   // the warehouse overflows: the oldest unkept objects go to a quiet auction
   let over = shelf(s).length - cap(s);
   if (over > 0) for (const it of shelf(s).sort((a, b) => a.foundDay - b.foundDay)) { if (over <= 0) break; if (it.keep) continue; it.status = 'auctioned'; const e = logEntry(s, it.tag); e.status = 'AUCTIONED'; e.closedDay = s.day; s.budget += 1; over--; }
@@ -238,7 +249,8 @@ function endDay(s) {
   s.phase = 'morning';
   return true;
 }
-function buy(s, id) { const u = upById[id]; if (!u || s.bought[id] || s.budget < u.cost || s.phase !== 'morning') return false; s.budget -= u.cost; s.bought[id] = 1; return true; }
+function upgradeOpen(s, u) { return !u.from || s.day + 1 >= u.from; }
+function buy(s, id) { const u = upById[id]; if (!u || s.bought[id] || s.budget < u.cost || s.phase !== 'morning' || !upgradeOpen(s, u)) return false; s.budget -= u.cost; s.bought[id] = 1; return true; }
 function nextDay(s) { if (s.phase !== 'morning') return false; startDay(s); return true; }
 function accuracy(s) { const t = s.stats; const right = t.returns + t.holds + t.flags, all = right + t.wrongReturns + t.wrongHolds + t.wrongFlags; return all ? right / all : 0; }
 function finish(s) { if (s.ended) return; const a = accuracy(s); s.ended = (a >= 0.9 && s.rep >= 60) ? 'gold' : (a >= 0.7 && s.rep >= 35) ? 'good' : 'poor'; s.phase = 'done'; }
@@ -273,6 +285,6 @@ function sanitize(raw) {
   } catch (e) { return null; }
 }
 
-const ENGINE = { D, typeById, upById, newRun, startDay, nextDay, current, stamp, auctionLots, auction, endDay, buy, finish, score, accuracy, correctFor, evidenceFlag, matches, shelf, visibleLog, logEntry, ordersFor, prohibitedFor, isProhibited, cap, has, sanitize, rand, tagStr };
+const ENGINE = { D, typeById, upById, newRun, startDay, nextDay, current, stamp, auctionLots, auction, endDay, buy, finish, score, accuracy, correctFor, evidenceFlag, upgradeOpen, LATE_DAY, matches, shelf, visibleLog, logEntry, ordersFor, prohibitedFor, isProhibited, cap, has, sanitize, rand, tagStr };
 if (typeof module !== 'undefined' && module.exports) module.exports = ENGINE; else root.LPO = ENGINE;
 })(typeof window !== 'undefined' ? window : globalThis);

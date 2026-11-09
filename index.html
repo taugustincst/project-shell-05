@@ -15,7 +15,7 @@
 <div id="app" class="app" hidden>
   <header class="top">
     <div><h1>Lost Property Office</h1><div class="sub" id="hdr-day">Day 1 of 30</div></div>
-    <div class="meters"><div class="meter"><span>Reputation</span><b id="hdr-rep">10</b></div><div class="meter"><span>Budget</span><b id="hdr-budget">£6</b></div></div>
+    <div class="meters"><div class="meter"><span>Reputation</span><b id="hdr-rep">10</b></div><div class="meter"><span>Budget</span><b id="hdr-budget">£6</b></div><div class="hdr-tools"><button class="mini" id="btn-large" aria-pressed="false" aria-label="Large text">Aa</button><button class="mini" id="btn-sound" aria-pressed="true" aria-label="Sound">♪</button></div></div>
   </header>
 
   <section class="counter" id="counter">
@@ -63,11 +63,13 @@
 <div class="modal" id="modal-ledger" hidden><div class="sheet"><div class="sheet-date" id="l-date"></div><h2>Day ledger</h2><div id="l-rows"></div><p id="l-sum"></p><button class="btn primary" id="btn-ledger">Close the ledger</button></div></div>
 <div class="modal" id="modal-morning" hidden><div class="sheet"><div class="sheet-date" id="m-date"></div><h2>Before opening</h2><p class="muted" id="m-news"></p><div id="shop"></div><button class="btn primary" id="btn-open">Open the counter</button><div class="row-btns"><button class="btn" id="btn-settings-large">Large text</button><button class="btn danger" id="btn-newseason">Start a new season</button></div></div></div>
 <div class="modal" id="modal-ending" hidden><div class="sheet"><div class="sheet-date">End of season</div><h2 id="e-title"></h2><p id="e-text"></p><div id="e-stats" class="stats"></div><button class="btn primary" id="btn-again">Another season</button></div></div>
-<div class="modal" id="modal-help" hidden><div class="sheet"><div class="sheet-date">Monday morning</div><h2>Your first day</h2><p>Travellers describe what they lost. Their memory is faulty: colours, trains and days go wrong. The <b>distinguishing mark</b> does not.</p><p>Search the <b>Shelves</b>, cross-check the <b>Log</b>, and stamp: <b>RETURN</b> the one object that fits, <b>HOLD</b> when you cannot prove it, <b>FLAG</b> when the Standing <b>Orders</b> say so.</p><p class="muted">Every stamp is provable from the Orders. New orders arrive through the season.</p><button class="btn primary" id="btn-help">Open the counter</button></div></div>
+<div class="modal" id="modal-help" hidden><div class="sheet"><div class="sheet-date">Monday morning</div><h2>Your first day</h2><p>Travellers describe what they lost. Their memory is faulty: colours, trains and days go wrong. The <b>distinguishing mark</b> does not.</p><p>Search the <b>Shelves</b>, cross-check the <b>Log</b>, and stamp: <b>RETURN</b> the one object that fits, <b>HOLD</b> when you cannot prove it, <b>FLAG</b> when the Standing <b>Orders</b> say so.</p><p class="muted">Every stamp is provable from the Orders. New orders arrive through the season. The first week is free; the rest of the season is one purchase.</p><button class="btn primary" id="btn-help">Open the counter</button></div></div>
+<div class="modal" id="modal-unlock" hidden><div class="sheet"><div class="sheet-date" id="u-date">End of the first week</div><h2>The rest of the season</h2><p>The first week is yours to play free. The full season is twenty-three more days at the counter:</p><ul class="unlock-list"><li>Insurance forms, rival claimants and the Thursday auctions</li><li>The ring's story, all the way to the right hand</li><li>Two late upgrades and three season endings</li><li>Every season after this one, with new claimants each time</li></ul><p class="muted">One purchase through Google Play. No ads and nothing else to buy.</p><p class="note" id="u-note" hidden></p><button class="btn primary" id="u-buy">Unlock the full season</button><div class="row-btns"><button class="btn" id="u-restore">Restore purchase</button><button class="btn" id="u-later">Not now</button></div></div></div>
 <div id="toast" class="toast" hidden></div>
 
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/billing.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>

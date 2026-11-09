@@ -2,7 +2,10 @@
 (function () {
 'use strict';
 const E = window.LPO, D = E.D;
-const VERSION = '1.0.0', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
+const VERSION = '1.1.0', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
+// The first week is free; the rest of the season is one Google Play purchase (js/billing.js).
+const BILL = window.createBilling({ storageKey: 'lostproperty.unlock', productId: 'full_unlock' });
+let unlockReason = null;
 const $ = id => document.getElementById(id);
 let S = null, profile = null, selectedTag = null, activeTab = 'shelves', shownResult = false;
 
@@ -13,7 +16,7 @@ function load() {
   try { raw = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { try { localStorage.setItem(BACKUP_KEY, localStorage.getItem(SAVE_KEY) || ''); } catch (e2) { } }
   const m = raw && raw.meta && typeof raw.meta === 'object' ? raw.meta : {};
   const n = (v, lo, hi) => { v = +v; return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; };
-  profile = { meta: { seasons: Math.round(n(m.seasons, 0, 1e6)), best: Math.round(n(m.best, 0, 1e7)), rings: Math.round(n(m.rings, 0, 1e6)) }, settings: { large: !!(raw && raw.settings && raw.settings.large === true), helped: !!(raw && raw.settings && raw.settings.helped === true) } };
+  profile = { meta: { seasons: Math.round(n(m.seasons, 0, 1e6)), best: Math.round(n(m.best, 0, 1e7)), rings: Math.round(n(m.rings, 0, 1e6)) }, settings: { large: !!(raw && raw.settings && raw.settings.large === true), helped: !!(raw && raw.settings && raw.settings.helped === true), quiet: !!(raw && raw.settings && raw.settings.quiet === true) } };
   S = raw && raw.run ? E.sanitize(raw.run) : null;
   if (!S) S = E.newRun({});
 }
@@ -26,10 +29,51 @@ const dayName = d => `Day ${d}`;
 let toastTimer = 0; function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2400); }
 function show(id) { $(id).hidden = false; } function hide(id) { $(id).hidden = true; }
 
+/* ---------- the stamp's thunk ---------- */
+let audio = null;
+function thunk(ok) {
+  try { if (navigator.vibrate) navigator.vibrate(ok ? 18 : [18, 40, 18]); } catch (e) { }
+  if (profile.settings.quiet) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)(); const a = audio, t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(ok ? 150 : 110, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16); o.connect(g).connect(a.destination); o.start(t); o.stop(t + 0.18);
+    const n = a.createBufferSource(), b = a.createBuffer(1, Math.floor(a.sampleRate * 0.05), a.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    const ng = a.createGain(); ng.gain.value = 0.18; n.buffer = b; n.connect(ng).connect(a.destination); n.start(t);
+  } catch (e) { /* no sound on this device */ }
+}
+
+/* ---------- the unlock ---------- */
+const owned = () => BILL.state.owned;
+const lockedNow = () => S.day > D.FREE_DAYS && !owned() && S.phase !== 'done';
+function showUnlock(reason) { unlockReason = reason; renderUnlock(); show('modal-unlock'); }
+function renderUnlock() {
+  const b = BILL.state, note = $('u-note');
+  $('u-date').textContent = unlockReason === 'blocked' ? dayName(S.day) : 'End of the first week';
+  $('u-later').textContent = unlockReason === 'blocked' ? 'Start a new season' : 'Not now';
+  let msg = '';
+  if (!b.available) msg = 'The full season is unlocked in the Google Play edition of the game.';
+  else if (b.pending) msg = 'Your purchase is waiting for the payment to clear. The season unlocks as soon as Google Play confirms it.';
+  else if (b.error) msg = b.error;
+  else if (b.busy) msg = 'Waiting for Google Play…';
+  note.hidden = !msg; note.textContent = msg;
+  $('u-buy').textContent = b.price ? `Unlock the full season · ${b.price}` : 'Unlock the full season';
+  $('u-buy').disabled = !b.available || b.busy || b.pending; $('u-restore').disabled = !b.available || b.busy;
+}
+function unlocked() {
+  if ($('modal-unlock').hidden) return;
+  hide('modal-unlock'); toast('The full season is yours. Thank you.');
+  if (unlockReason === 'morning' && S.phase === 'morning') openCounter();
+  else render();
+  unlockReason = null;
+}
+
 /* ---------- render ---------- */
 function render() {
   $('hdr-day').textContent = `${dayName(S.day)} of ${D.SEASON_DAYS}`;
   $('hdr-rep').textContent = Math.round(S.rep); $('hdr-budget').textContent = '£' + Math.round(S.budget);
+  $('btn-large').setAttribute('aria-pressed', String(profile.settings.large)); $('btn-sound').setAttribute('aria-pressed', String(!profile.settings.quiet));
+  if (lockedNow()) { if ($('modal-unlock').hidden) showUnlock('blocked'); return; }
   const c = E.current(S);
   if (c) {
     $('c-name').textContent = c.name; $('c-queue').textContent = `${S.idx + 1} of ${S.claimants.length} at the counter`;
@@ -114,9 +158,11 @@ function renderLedger() {
 function renderMorning() {
   $('m-date').textContent = dayName(S.day + 1);
   const next = S.day + 1; const newOrders = D.ORDERS.filter(o => o.day === next); const newProh = D.PROHIBITED.filter(p => p.day === next);
-  $('m-news').textContent = (newOrders.length ? `New standing order posted: ${newOrders.map(o => o.title).join('; ')}. ` : '') + (newProh.length ? `Added to the prohibited list: ${newProh.map(p => p.name).join(', ')}. ` : '') + (next === 22 || next === 29 ? 'Thursday: auction day. ' : '') || 'A quiet morning. The kettle, if you have one, is on.';
+  const newUps = D.UPGRADES.filter(u => u.from === next);
+  $('m-news').textContent = (newUps.length ? `New in the catalogue: ${newUps.map(u => u.name).join(', ')}. ` : '') + (newOrders.length ? `New standing order posted: ${newOrders.map(o => o.title).join('; ')}. ` : '') + (newProh.length ? `Added to the prohibited list: ${newProh.map(p => p.name).join(', ')}. ` : '') + (next === 22 || next === 29 ? 'Thursday: auction day. ' : '') || 'A quiet morning. The kettle, if you have one, is on.';
   const box = $('shop'); box.innerHTML = '';
-  for (const u of D.UPGRADES) { const d = document.createElement('div'); d.className = 'shop' + (S.bought[u.id] ? ' owned' : ''); d.innerHTML = `<b></b><button class="btn" data-up="${u.id}"></button><div class="d"></div>`; d.querySelector('b').textContent = u.name; d.querySelector('.d').textContent = u.desc; const b = d.querySelector('button'); b.textContent = S.bought[u.id] ? 'Owned' : '£' + u.cost; b.disabled = !!S.bought[u.id] || S.budget < u.cost; box.appendChild(d); }
+  if (!owned() && next <= D.FREE_DAYS) { const fw = document.createElement('div'); fw.className = 'freeweek'; fw.textContent = `Free week: day ${next} of ${D.FREE_DAYS}. The rest of the season is one purchase.`; box.appendChild(fw); }
+  for (const u of D.UPGRADES) { if (!E.upgradeOpen(S, u)) continue; const d = document.createElement('div'); d.className = 'shop' + (S.bought[u.id] ? ' owned' : ''); d.innerHTML = `<b></b><button class="btn" data-up="${u.id}"></button><div class="d"></div>`; d.querySelector('b').textContent = u.name; d.querySelector('.d').textContent = u.desc; const b = d.querySelector('button'); b.textContent = S.bought[u.id] ? 'Owned' : '£' + u.cost; b.disabled = !!S.bought[u.id] || S.budget < u.cost; box.appendChild(d); }
   show('modal-morning');
 }
 function renderEnding() {
@@ -129,8 +175,9 @@ function renderEnding() {
 function doStamp(action) {
   const c = E.current(S); if (!c) return;
   if (action === 'RETURN' && !selectedTag) return;
-  const r = E.stamp(S, action, action === 'RETURN' ? selectedTag : null); selectedTag = null; save(); renderResult(r);
+  const r = E.stamp(S, action, action === 'RETURN' ? selectedTag : null); selectedTag = null; save(); thunk(r.ok); renderResult(r);
 }
+function openCounter() { hide('modal-morning'); E.nextDay(S); selectedTag = null; save(); setTab('shelves'); render(); }
 function setTab(t) { activeTab = t; document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t)); document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t)); }
 function finishSeason() { if (!S.flags.counted) { S.flags.counted = true; profile.meta.seasons++; profile.meta.best = Math.max(profile.meta.best, E.score(S)); if (S.flags.ring_reunited) profile.meta.rings++; save(); } }
 
@@ -141,21 +188,30 @@ function init() {
   $('r-next').addEventListener('click', () => { hide('modal-result'); render(); });
   $('btn-auction').addEventListener('click', () => { const keep = Array.from(document.querySelectorAll('#auction-lots input:checked')).map(i => i.dataset.tag); const r = E.auction(S, keep); hide('modal-auction'); if (r && r.lost.length) toast('Something went under the hammer that the log had a note on.'); save(); render(); });
   $('btn-ledger').addEventListener('click', () => { hide('modal-ledger'); E.endDay(S); if (S.ended) finishSeason(); save(); render(); });
-  $('btn-open').addEventListener('click', () => { hide('modal-morning'); E.nextDay(S); selectedTag = null; save(); setTab('shelves'); render(); });
+  $('btn-open').addEventListener('click', () => { if (S.day + 1 > D.FREE_DAYS && !owned()) { hide('modal-morning'); showUnlock('morning'); return; } openCounter(); });
+  $('u-buy').addEventListener('click', () => { BILL.buy(); renderUnlock(); });
+  $('u-restore').addEventListener('click', () => { BILL.restore(); renderUnlock(); });
+  $('u-later').addEventListener('click', () => {
+    if (unlockReason === 'blocked') { if (!confirm('Start a new season from day 1? This season will be lost.')) return; hide('modal-unlock'); S = E.newRun({}); selectedTag = null; save(); unlockReason = null; render(); return; }
+    hide('modal-unlock'); unlockReason = null; render();
+  });
+  BILL.onChange(st => { if (st.owned) unlocked(); else if (!$('modal-unlock').hidden) renderUnlock(); });
+  $('btn-large').addEventListener('click', () => { profile.settings.large = !profile.settings.large; document.documentElement.classList.toggle('large', profile.settings.large); save(); render(); });
+  $('btn-sound').addEventListener('click', () => { profile.settings.quiet = !profile.settings.quiet; save(); render(); if (!profile.settings.quiet) thunk(true); });
   $('shop').addEventListener('click', e => { const b = e.target.closest('[data-up]'); if (!b) return; if (E.buy(S, b.dataset.up)) { save(); toast(E.upById[b.dataset.up].name + ' — bought.'); renderMorning(); $('hdr-budget').textContent = '£' + Math.round(S.budget); } });
-  $('btn-settings-large').addEventListener('click', () => { profile.settings.large = !profile.settings.large; document.documentElement.classList.toggle('large', profile.settings.large); save(); });
+  $('btn-settings-large').addEventListener('click', () => { profile.settings.large = !profile.settings.large; document.documentElement.classList.toggle('large', profile.settings.large); save(); render(); });
   $('btn-newseason').addEventListener('click', () => { if (!confirm('Start a new season from day 1? This season is lost.')) return; hide('modal-morning'); S = E.newRun({}); selectedTag = null; save(); render(); });
   $('btn-again').addEventListener('click', () => { hide('modal-ending'); S = E.newRun({}); selectedTag = null; save(); render(); });
   $('btn-help').addEventListener('click', () => { hide('modal-help'); profile.settings.helped = true; save(); });
   $('filter-type').addEventListener('change', renderShelves); $('search-shelf').addEventListener('input', renderShelves); $('search-log').addEventListener('input', renderLog); $('phone-filter').addEventListener('change', renderLog);
-  $('app').hidden = false; render();
+  $('app').hidden = false; BILL.start(); render();
   if (!profile.settings.helped && S.day === 1 && S.idx === 0) show('modal-help');
   if (S.ended) finishSeason();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => { });
   window.addEventListener('pagehide', save); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
 }
 window.__lostproperty = {
-  get state() { return S; }, E, D, VERSION,
+  get state() { return S; }, E, D, VERSION, billing: BILL,
   seedDay(day, seed) { S = E.newRun({ seed: seed | 0 || 1, skipTo: day | 0 || 1 }); selectedTag = null; hide('modal-help'); ['modal-result', 'modal-auction', 'modal-ledger', 'modal-morning', 'modal-ending'].forEach(hide); save(); render(); return S; },
   select(tag) { selectedTag = tag; render(); }, stamp: doStamp, correct() { const c = E.current(S); return c ? c.correct : null; },
   auto() { const c = E.current(S); if (!c) return null; selectedTag = c.correct.tag || null; return doStamp(c.correct.action); },

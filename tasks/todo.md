@@ -21,7 +21,7 @@
 - [x] Under 3 MB (≈120 KB)
 
 ## Monetization (brief §3)
-- [x] Paid app, no IAP, no billing code; privacy.html says so
+- [x] ~~Paid app, no IAP~~ Changed 2026-11-09 to free with one unlock (`full_unlock`) after day 7, per Taylor's "Free with paid unlock"; privacy.html says so
 
 ## Tests and tooling
 - [x] tests/engine.test.js (9 tests incl. fairness over 300 seasons)
