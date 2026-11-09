@@ -50,3 +50,13 @@ h1, h2, h3 { margin: 0; font-weight: 600; } .muted { color: var(--muted); }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; } .stat { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; } .stat b { display: block; font-size: 1.1rem; } .stat span { font-size: 0.78rem; color: var(--muted); }
 .toast { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 12px; z-index: 30; font-size: 0.9rem; max-width: 90%; }
 .empty { color: var(--muted); text-align: center; padding: 20px; }
+
+/* v1.1: header tools, sticky sheet actions, the unlock sheet */
+.hdr-tools { display: flex; flex-direction: column; gap: 4px; margin-left: 4px; }
+.mini { min-width: 36px; min-height: 30px; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; font-size: 0.85rem; color: var(--ink); cursor: pointer; padding: 0 6px; }
+.mini[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+#modal-morning #btn-open { position: sticky; bottom: 0; box-shadow: 0 -10px 14px var(--paper); }
+.unlock-list { margin: 8px 0 8px 20px; padding: 0; } .unlock-list li { margin: 4px 0; }
+.note { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 0.9rem; }
+.freeweek { font-size: 0.8rem; color: var(--muted); margin-top: 6px; }
+.stamp.thunk { transform: scale(0.94); }

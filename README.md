@@ -2,7 +2,7 @@
 
 **A cozy Papers, Please, for objects, not people.** Day-shift clerk at a railway lost-property office. Travellers describe lost items with faulty memories; you search the shelves, match claims against the found-item log, spot the frauds, and reunite a lost wedding ring with its owner across a season-long story.
 
-Paid on Google Play at $2.99: pay once, no ads, no in-app purchases, fully offline.
+Free on Google Play for the first week of the season; one purchase unlocks the rest. No ads, nothing else to buy, fully offline.
 
 Status: **v1.0.0 draft built 2026-11-03**, not yet submitted. Build brief and living log: [HANDOFF.md](HANDOFF.md). Plan and verification: [tasks/todo.md](tasks/todo.md). Repo rename at ship time (Tj's call).
 
@@ -40,4 +40,4 @@ npm install && node tests/smoke.js
 `localStorage` key `lostproperty.v1`: `{ run, meta, settings }`. Every field is sanitized on load; an unreadable save is copied to `lostproperty.v1.backup` and a fresh season starts.
 
 ## Publishing
-A paid app on Google Play with the whole game packed inside it (`android/play`, see `PLAY.md`). Pages deploys only the store page from `main` (`site/index.html`, the privacy policy `privacy.html` and the store graphics), not the playable game. Store copy: `store/listing.md`.
+A free app on Google Play with a one-time unlock after day 7, and the whole game packed inside it (`android/play`, see `PLAY.md`). Pages deploys only the store page from `main` (`site/index.html`, the privacy policy `privacy.html` and the store graphics), not the playable game. Store copy: `store/listing.md`.

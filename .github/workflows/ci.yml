@@ -18,6 +18,6 @@ jobs:
           node-version: 22
       - run: node tests/engine.test.js
       - run: node sim/sim.js 60
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: node tests/smoke.js
