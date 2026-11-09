@@ -8,8 +8,9 @@ const fakePlay = owned => () => {
   const say = m => setTimeout(() => window.__billingEvent(JSON.stringify(m)), 30);
   window.__buys = 0;
   window.AndroidBilling = {
-    start(id) { say({ type: 'ready', product: id }); say({ type: 'price', product: id, price: '$2.99' }); say({ type: 'owned', product: id, owned: window.__ownedAtStart }); },
-    buy(id) { window.__buys++; say({ type: 'purchased', product: id }); },
+    // Play remembers a purchase across launches, as the real store does.
+    start(id) { say({ type: 'ready', product: id }); say({ type: 'price', product: id, price: '$2.99' }); say({ type: 'owned', product: id, owned: window.__ownedAtStart || localStorage.getItem('fakeplay.bought') === '1' }); },
+    buy(id) { window.__buys++; localStorage.setItem('fakeplay.bought', '1'); say({ type: 'purchased', product: id }); },
     restore(id) { say({ type: 'owned', product: id, owned: true }); }
   };
   window.__ownedAtStart = owned;
@@ -75,7 +76,7 @@ const fakePlay = owned => () => {
     await q.tap('#u-buy'); await q.waitForSelector('#modal-unlock', { state: 'hidden' });
     check('buying opens day 8 at once', (await q.textContent('#hdr-day')).startsWith('Day 8') && await T(q, () => window.__buys === 1));
     await q.reload(); await q.waitForSelector('#app:not([hidden])'); await q.waitForTimeout(200);
-    check('the unlock survives a reload (offline)', await q.isHidden('#modal-unlock') && (await q.textContent('#hdr-day')).startsWith('Day 8'));
+    check('the unlock survives a reload', await q.isHidden('#modal-unlock') && (await q.textContent('#hdr-day')).startsWith('Day 8'));
     await ctx.close();
   }
   {
