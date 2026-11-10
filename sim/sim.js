@@ -15,16 +15,16 @@ const CLERKS = {
 };
 const seeds = +(process.argv[2] || 200);
 for (const name in CLERKS) {
-  const ends = { gold: 0, good: 0, poor: 0 }; let rep = 0, score = 0, rings = 0, right = 0, total = 0; const curve = new Array(D.SEASON_DAYS + 1).fill(0);
+  const ends = { gold: 0, good: 0, poor: 0 }; let rep = 0, score = 0, rings = 0, right = 0, total = 0, peak = 0, peakDay = 0; const curve = new Array(D.SEASON_DAYS + 1).fill(0);
   for (let seed = 1; seed <= seeds; seed++) {
     const s = E.newRun({ seed });
     while (!s.ended) {
-      while (s.phase === 'counter') { const c = E.current(s); const v = CLERKS[name](s, c); const r = E.stamp(s, v.action, v.tag); total++; if (r.ok) right++; }
+      while (s.phase === 'counter') { const c = E.current(s); const v = CLERKS[name](s, c); const r = E.stamp(s, v.action, v.tag); total++; if (r.ok) right++; if (s.rep > peak) { peak = s.rep; peakDay = s.day; } }
       if (s.phase === 'auction') E.auction(s, name === 'auctioneer' ? [] : E.auctionLots(s).filter(i => i.keep).map(i => i.tag));
       curve[s.day] += s.rep; E.endDay(s); if (s.phase === 'morning') E.nextDay(s);
     }
     ends[s.ended]++; rep += s.rep; score += E.score(s); if (s.flags.ring_reunited) rings++;
   }
   const f = n => (n / seeds).toFixed(1);
-  console.log(`${name.padEnd(11)} gold=${ends.gold} good=${ends.good} poor=${ends.poor}  avg rep=${f(rep)} avg score=${f(score)} ring=${rings}/${seeds} accuracy=${(100 * right / total).toFixed(1)}%  rep by day 5/10/15/20/25/30 = ${[5, 10, 15, 20, 25, 30].map(d => f(curve[d])).join('/')}`);
+  console.log(`${name.padEnd(11)} gold=${ends.gold} good=${ends.good} poor=${ends.poor}  avg rep=${f(rep)} avg score=${f(score)} ring=${rings}/${seeds} accuracy=${(100 * right / total).toFixed(1)}% peak rep=${peak} (day ${peakDay})  rep by day 5/10/15/20/25/30 = ${[5, 10, 15, 20, 25, 30].map(d => f(curve[d])).join('/')}`);
 }

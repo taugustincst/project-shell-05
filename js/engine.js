@@ -2,7 +2,7 @@
 (function (root) {
 'use strict';
 const D = (typeof LPO_DATA !== 'undefined') ? LPO_DATA : require('./data.js');
-const CAP_BASE = 40, CAP_SHELVING = 12, AUCTION_AGE = 14, AUCTION_DAYS = [22, 29], LATE_DAY = 14;
+const CAP_BASE = 40, CAP_SHELVING = 12, AUCTION_AGE = 14, AUCTION_DAYS = [22, 29], LATE_DAY = 14, EARLY_DRIFT_DAY = 7, REP_CEIL = 97;
 const typeById = {}; D.TYPES.forEach(t => { typeById[t.id] = t; }); D.PROHIBITED.forEach(t => { typeById[t.id] = t; });
 const upById = {}; D.UPGRADES.forEach(u => { upById[u.id] = u; });
 
@@ -14,6 +14,7 @@ const tagStr = n => String.fromCharCode(65 + Math.floor((n - 1) / 99) % 26) + '-
 function newRun(opts) {
   opts = opts || {};
   const s = { v: 1, seed: (opts.seed | 0) || ((Date.now() ^ (Math.random() * 1e9)) | 0), day: 0, phase: 'morning', rep: 10, budget: 6, bought: {}, warehouse: [], log: [], nextTag: 1, claimants: [], idx: 0, results: [], flags: {}, storyDone: {}, stats: { returns: 0, wrongReturns: 0, holds: 0, wrongHolds: 0, flags: 0, wrongFlags: 0, days: 0 }, history: [], ended: null, journal: [] };
+  s.shape = seasonShape(s.seed);
   if (opts.skipTo) { s.day = (opts.skipTo | 0) - 1; }
   startDay(s);
   return s;
@@ -171,8 +172,10 @@ function startDay(s) {
   // decoys: for every story target, another object of the same type with a different mark
   for (const c of s.claimants) if (c.target) { const it = s.warehouse.find(i => i.tag === c.target); if (!shelf(s).some(i => i.type === it.type && i.tag !== it.tag)) { const g = genericItem(s, it.type); if (g.mark === it.mark) g.mark = pickNot(s, D.MARKS, it.mark); addItem(s, g, Math.max(1, s.day - 1 - Math.floor(rand(s) * 3))); } }
   // generic claimants
-  const count = Math.max(0, 2 + Math.floor((s.day - 1) / 6) - (s.claimants.length > 1 ? 1 : 0));
-  const fraudP = 0.12 + 0.2 * (s.day / D.SEASON_DAYS);
+  const sh = s.shape || seasonShape(s.seed);
+  if (sh.rush[s.day]) s.journal.push({ day: s.day, text: RUSHES[sh.rush[s.day] - 1] });
+  const count = Math.max(1, 2 + Math.floor((s.day - 1) / 6) + (sh.days[s.day] | 0) - (s.claimants.length > 1 ? 1 : 0));
+  const fraudP = (0.12 + 0.2 * (s.day / D.SEASON_DAYS)) * sh.fraud;
   let rivalDone = false;
   for (let i = 0; i < count; i++) {
     const pool = shelf(s).filter(it => !it.keep && !it.story && !isProhibited(s, it.type) && !s.claimants.some(c => c.target === it.tag));
@@ -220,6 +223,8 @@ function stamp(s, action, tag) {
   if (ok && c.story) { if (c.story.endsArc && action === 'RETURN') s.flags.ring_reunited = true; s.storyDone[c.story.day + ':' + c.story.who] = 1; }
   // from the third week a good office is expected, not admired: correct stamps earn half the reputation
   if (dRep > 0 && s.day > LATE_DAY) dRep = Math.ceil(dRep / 2);
+  // the last stretch of a good name is earned slowly: past 90 a right stamp adds one point, and no office is talked of as perfect
+  if (dRep > 0 && s.rep >= 90) dRep = Math.max(0, Math.min(1, REP_CEIL - s.rep));
   s.rep = Math.max(0, Math.min(100, s.rep + dRep)); s.budget = Math.max(0, s.budget + dBudget);
   const r = { name: c.name, action, tag: tag || null, ok, right, dRep, dBudget, text, story: !!c.story };
   s.results.push(r); s.journal.push({ day: s.day, text: `${c.name}: ${action}${ok ? '' : ' (wrong)'}. ${text}` });
@@ -236,9 +241,11 @@ function auction(s, withheld) {
 }
 function endDay(s) {
   if (s.phase !== 'ledger') return false;
-  if (has(s, 'kettle')) s.rep = Math.min(100, s.rep + 1);
+  if (has(s, 'kettle') && s.rep < REP_CEIL) s.rep += 1;
   // expectations rise: past the second week, a high reputation drifts back unless the office keeps earning it
   if (s.day > LATE_DAY && s.rep > 40) s.rep = Math.max(40, s.rep - Math.round((s.rep - 40) * (has(s, 'refit') ? 0.08 : 0.15)));
+  // the second week: a very good name starts to be taken for granted, gently, so a perfect first fortnight peaks short of 100
+  else if (s.day > EARLY_DRIFT_DAY && s.rep > 60) s.rep = Math.max(60, s.rep - Math.round((s.rep - 60) * (has(s, 'refit') ? 0.06 : 0.12)));
   if (has(s, 'clock') && s.results.length && s.results.every(r => r.ok)) s.budget += 1;
   // the warehouse overflows: the oldest unkept objects go to a quiet auction
   let over = shelf(s).length - cap(s);
@@ -253,6 +260,15 @@ function upgradeOpen(s, u) { return !u.from || s.day + 1 >= u.from; }
 function buy(s, id) { const u = upById[id]; if (!u || s.bought[id] || s.budget < u.cost || s.phase !== 'morning' || !upgradeOpen(s, u)) return false; s.budget -= u.cost; s.bought[id] = 1; return true; }
 function nextDay(s) { if (s.phase !== 'morning') return false; startDay(s); return true; }
 function accuracy(s) { const t = s.stats; const right = t.returns + t.holds + t.flags, all = right + t.wrongReturns + t.wrongHolds + t.wrongFlags; return all ? right / all : 0; }
+/* Every season has its own shape: quiet and busy days, three rush days with a reason, and its own share of chancers.
+   Drawn from a separate stream so the rest of a seed's season is unchanged. */
+const RUSHES = ['A football special came in at noon and half of it lost something.', 'The fair is on at the park. The counter never emptied.', 'A signal failure held three trains for an hour, and everyone left something behind.', 'Market day: the 8:40 was full of baskets, and so was the counter by ten.', 'A school trip came through. Forty lunchboxes, forty owners.'];
+function seasonShape(seed) {
+  const r = { seed: (seed ^ 0x2545F491) | 0 }; const days = [];
+  for (let d = 0; d <= D.SEASON_DAYS; d++) { const x = rand(r); days.push(x < 0.2 ? -1 : x > 0.8 ? 1 : 0); }
+  const rush = {}; while (Object.keys(rush).length < 3) { const d = 3 + Math.floor(rand(r) * (D.SEASON_DAYS - 3)); if (!rush[d]) { rush[d] = 1 + Math.floor(rand(r) * RUSHES.length); days[d] = 2; } }
+  return { days, rush, fraud: Math.round((0.75 + rand(r) * 0.6) * 100) / 100 };
+}
 function finish(s) { if (s.ended) return; const a = accuracy(s); s.ended = (a >= 0.9 && s.rep >= 60) ? 'gold' : (a >= 0.7 && s.rep >= 35) ? 'good' : 'poor'; s.phase = 'done'; }
 function score(s) { const t = s.stats; return Math.max(0, t.returns * 10 + t.flags * 8 + t.holds * 4 - t.wrongReturns * 15 - t.wrongFlags * 10 - t.wrongHolds * 4 + (s.flags.ring_reunited ? 100 : 0)); }
 
@@ -279,6 +295,10 @@ function sanitize(raw) {
     s.stats = { returns: 0, wrongReturns: 0, holds: 0, wrongHolds: 0, flags: 0, wrongFlags: 0, days: 0 }; if (raw.stats && typeof raw.stats === 'object') for (const k in s.stats) s.stats[k] = Math.round(num(raw.stats[k], 0, 0, 1e6));
     s.history = Array.isArray(raw.history) ? raw.history.filter(h => h && typeof h === 'object').slice(0, 40).map(h => ({ day: Math.round(num(h.day, 1, 1, 60)), rep: num(h.rep, 0, 0, 100), budget: num(h.budget, 0, 0, 1e6), right: Math.round(num(h.right, 0, 0, 20)), total: Math.round(num(h.total, 0, 0, 20)) })) : [];
     s.journal = Array.isArray(raw.journal) ? raw.journal.filter(j => j && typeof j.text === 'string').slice(-400).map(j => ({ day: Math.round(num(j.day, 1, 1, 60)), text: j.text.slice(0, 600) })) : [];
+    const rs = raw.shape; if (rs && Array.isArray(rs.days) && rs.days.length === D.SEASON_DAYS + 1 && rs.days.every(x => [-1, 0, 1, 2].includes(x)) && rs.rush && typeof rs.rush === 'object') {
+      const rush = {}; for (const k in rs.rush) { const d = k | 0, v = rs.rush[k] | 0; if (d >= 1 && d <= D.SEASON_DAYS && v >= 1 && v <= RUSHES.length) rush[d] = v; }
+      s.shape = { days: rs.days.slice(), rush, fraud: num(rs.fraud, 1, 0.75, 1.35) };
+    }
     s.ended = ['gold', 'good', 'poor'].includes(raw.ended) ? raw.ended : null; if (s.ended) s.phase = 'done';
     if (s.phase === 'counter' && s.idx >= s.claimants.length) s.phase = 'ledger';
     return s;

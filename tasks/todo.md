@@ -24,7 +24,7 @@
 - [x] ~~Paid app, no IAP~~ Changed 2026-11-09 to free with one unlock (`full_unlock`) after day 7, per Taylor's "Free with paid unlock"; privacy.html says so
 
 ## Tests and tooling
-- [x] tests/engine.test.js (9 tests incl. fairness over 300 seasons)
+- [x] tests/engine.test.js (13 tests incl. fairness over 300 seasons, season variety, reputation ceiling)
 - [x] sim/sim.js (five clerk heuristics; difficulty and ending distribution)
 - [x] tests/smoke.js (21 checks over file://)
 - [x] tools/make-icons.js (icons + staged screenshot)
