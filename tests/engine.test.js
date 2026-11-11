@@ -36,4 +36,13 @@ t('sanitize survives garbage and round-trips a live season', () => {
 });
 t('every story entry is well-formed', () => { for (const st of D.STORY) { assert.ok(E.typeById[st.item.type], st.who || st.note); assert.ok(D.MARKS.includes(st.item.mark), st.item.mark); if (st.kind === 'claim') assert.ok(D.PROFILES[st.profile] && st.say && st.after, st.who); } });
 t('every story entry names a real train line', () => { for (const st of D.STORY) { const l = st.line === undefined ? 0 : st.line; assert.ok(Number.isInteger(l) && l >= 0 && l < D.LINES.length, (st.who || st.note) + ' line ' + l); } });
+t('seasons differ on replay: daily volume, rush days and the share of chancers change with the seed', () => {
+  const vol = seed => { const s = E.newRun({ seed }); const v = []; let fr = 0; while (!s.ended) { v.push(s.claimants.length); fr += s.claimants.filter(c => c.profile === 'fraud').length; while (s.phase === 'counter') { const c = E.current(s); E.stamp(s, c.correct.action, c.correct.tag); } if (s.phase === 'auction') E.auction(s, []); E.endDay(s); if (s.phase === 'morning') E.nextDay(s); } return { v: v.join(','), fr, rush: Object.keys(s.shape.rush).length }; };
+  const runs = [1, 2, 3, 4, 5, 6].map(vol); assert.strictEqual(new Set(runs.map(r => r.v)).size, runs.length, 'every seed has its own day-by-day volume'); assert.ok(new Set(runs.map(r => r.fr)).size >= 3, 'the number of chancers varies');
+  for (const r of runs) assert.strictEqual(r.rush, 3); assert.deepStrictEqual(vol(4), vol(4));
+});
+t('a saved season keeps its shape through sanitize', () => { const s = E.newRun({ seed: 11 }); const r = E.sanitize(JSON.parse(JSON.stringify(s))); assert.deepStrictEqual(r.shape, s.shape); const bad = E.sanitize(Object.assign(JSON.parse(JSON.stringify(s)), { shape: { days: [9], rush: 'x', fraud: 50 } })); assert.strictEqual(bad.shape.days.length, D.SEASON_DAYS + 1, 'a broken shape is replaced by a fresh one'); assert.strictEqual(Object.keys(bad.shape.rush).length, 3); assert.ok(bad.shape.fraud >= 0.75 && bad.shape.fraud <= 1.35); });
+t('reputation never reads 100, even for a perfect clerk with the kettle', () => {
+  for (let seed = 1; seed <= 100; seed++) { const s = E.newRun({ seed }); s.bought.kettle = 1; let peak = 0; while (!s.ended) { while (s.phase === 'counter') { const c = E.current(s); E.stamp(s, c.correct.action, c.correct.tag); peak = Math.max(peak, s.rep); } if (s.phase === 'auction') E.auction(s, E.auctionLots(s).filter(i => i.keep).map(i => i.tag)); E.endDay(s); peak = Math.max(peak, s.rep); if (s.phase === 'morning') E.nextDay(s); } assert.ok(peak < 100, `seed ${seed} peak ${peak}`); assert.strictEqual(s.ended, 'gold', `seed ${seed}`); }
+});
 console.log(process.exitCode ? 'SOME FAILED' : `ALL ${n} PASSED`);
