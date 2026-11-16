@@ -1,8 +1,8 @@
 {
   "name": "lost-property-office",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Lost Property Office: a cozy object-checking deduction game, HTML5, packaged for Google Play.",
-  "scripts": { "test": "node tests/engine.test.js && node tests/smoke.js", "sim": "node sim/sim.js 200", "icons": "node tools/make-icons.js" },
+  "scripts": { "test": "node tests/more.test.js && node tests/engine.test.js && node tests/smoke.js", "sim": "node sim/sim.js 200", "icons": "node tools/make-icons.js" },
   "devDependencies": { "playwright": "^1.50.0" }
 }
