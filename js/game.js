@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const E = window.LPO, D = E.D;
-const VERSION = '1.1.0', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
+const VERSION = '1.1.1', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
 // The first week is free; the rest of the season is one Google Play purchase (js/billing.js).
 const BILL = window.createBilling({ storageKey: 'lostproperty.unlock', productId: 'full_unlock' });
 let unlockReason = null;
@@ -163,7 +163,7 @@ function renderMorning() {
   const box = $('shop'); box.innerHTML = '';
   if (!owned() && next <= D.FREE_DAYS) { const fw = document.createElement('div'); fw.className = 'freeweek'; fw.textContent = `Free week: day ${next} of ${D.FREE_DAYS}. The rest of the season is one purchase.`; box.appendChild(fw); }
   for (const u of D.UPGRADES) { if (!E.upgradeOpen(S, u)) continue; const d = document.createElement('div'); d.className = 'shop' + (S.bought[u.id] ? ' owned' : ''); d.innerHTML = `<b></b><button class="btn" data-up="${u.id}"></button><div class="d"></div>`; d.querySelector('b').textContent = u.name; d.querySelector('.d').textContent = u.desc; const b = d.querySelector('button'); b.textContent = S.bought[u.id] ? 'Owned' : '£' + u.cost; b.disabled = !!S.bought[u.id] || S.budget < u.cost; box.appendChild(d); }
-  show('modal-morning');
+  if ($('modal-more').hidden) show('modal-morning');
 }
 function renderEnding() {
   const en = D.ENDINGS[S.ended]; $('e-title').textContent = en.title; $('e-text').textContent = en.text + (S.flags.ring_reunited ? ' The ring went home.' : S.flags.ring_lost ? ' The ring did not go home. It should have.' : '');
@@ -200,6 +200,10 @@ function init() {
   $('btn-sound').addEventListener('click', () => { profile.settings.quiet = !profile.settings.quiet; save(); render(); if (!profile.settings.quiet) thunk(true); });
   $('shop').addEventListener('click', e => { const b = e.target.closest('[data-up]'); if (!b) return; if (E.buy(S, b.dataset.up)) { save(); toast(E.upById[b.dataset.up].name + ' — bought.'); renderMorning(); $('hdr-budget').textContent = '£' + Math.round(S.budget); } });
   $('btn-settings-large').addEventListener('click', () => { profile.settings.large = !profile.settings.large; document.documentElement.classList.toggle('large', profile.settings.large); save(); render(); });
+  // More from AugustInnovations: reached only from the morning, never during a day at the counter.
+  const moreCount = window.MoreGames ? window.MoreGames.render($('more-list'), 'lostproperty') : 0; $('btn-more').hidden = !moreCount;
+  $('btn-more').addEventListener('click', () => { hide('modal-morning'); show('modal-more'); });
+  $('btn-more-close').addEventListener('click', () => { hide('modal-more'); show('modal-morning'); });
   $('btn-newseason').addEventListener('click', () => { if (!confirm('Start a new season from day 1? This season is lost.')) return; hide('modal-morning'); S = E.newRun({}); selectedTag = null; save(); render(); });
   $('btn-again').addEventListener('click', () => { hide('modal-ending'); S = E.newRun({}); selectedTag = null; save(); render(); });
   $('btn-help').addEventListener('click', () => { hide('modal-help'); profile.settings.helped = true; save(); });
@@ -212,7 +216,7 @@ function init() {
 }
 window.__lostproperty = {
   get state() { return S; }, E, D, VERSION, billing: BILL,
-  seedDay(day, seed) { S = E.newRun({ seed: seed | 0 || 1, skipTo: day | 0 || 1 }); selectedTag = null; hide('modal-help'); ['modal-result', 'modal-auction', 'modal-ledger', 'modal-morning', 'modal-ending'].forEach(hide); save(); render(); return S; },
+  seedDay(day, seed) { S = E.newRun({ seed: seed | 0 || 1, skipTo: day | 0 || 1 }); selectedTag = null; hide('modal-help'); ['modal-result', 'modal-auction', 'modal-ledger', 'modal-morning', 'modal-more', 'modal-ending'].forEach(hide); save(); render(); return S; },
   select(tag) { selectedTag = tag; render(); }, stamp: doStamp, correct() { const c = E.current(S); return c ? c.correct : null; },
   auto() { const c = E.current(S); if (!c) return null; selectedTag = c.correct.tag || null; return doStamp(c.correct.action); },
   closeModals() { ['modal-result', 'modal-help'].forEach(hide); render(); }, render, setTab, save, reset() { localStorage.removeItem(SAVE_KEY); location.reload(); }

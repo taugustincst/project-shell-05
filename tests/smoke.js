@@ -39,6 +39,12 @@ const fakePlay = owned => () => {
   await p.waitForSelector('#modal-ledger:not([hidden])'); check('the day ends in a ledger', (await p.locator('.lrow').count()) >= 2); await p.click('#btn-ledger');
   await p.waitForSelector('#modal-morning:not([hidden])'); check('the morning offers the shop', (await p.locator('.shop').count()) === 8);
   await T(p, () => { window.__lostproperty.state.budget = 100; window.__lostproperty.render(); }); await p.click('[data-up="labels"]'); check('buying shelf labels', await T(p, () => window.__lostproperty.state.bought.labels === 1));
+  // More from AugustInnovations, from the morning only
+  check('the morning offers More games', await p.isVisible('#btn-more'));
+  await p.click('#btn-more'); await p.waitForSelector('#modal-more:not([hidden])');
+  { const rows = await p.$$eval('#more-list a', as => as.map(a => ({ href: a.href, t: a.textContent, img: a.querySelector('img').naturalWidth }))); check('More games lists the other live titles with icon and Play link', rows.length >= 2 && rows.every(r => r.href.startsWith('https://play.google.com/store/apps/details?id=com.taugustincst.') && !r.href.endsWith('.lostproperty') && r.img > 0 && !/[$£€]/.test(r.t)), JSON.stringify(rows.map(r => r.href.split('.').pop()))); }
+  check('More games is not offered at the counter', await T(p, () => !document.querySelector('#app .top #btn-more, #stampbar #btn-more')));
+  await p.click('#btn-more-close'); check('Back returns to the morning', await p.isVisible('#modal-morning') && await p.isHidden('#modal-more'));
   await p.click('#btn-open'); check('day 2 opens', (await p.textContent('#hdr-day')).startsWith('Day 2'));
   check('the type filter appears after buying labels', await p.isVisible('#filter-type'));
   // the log and orders tabs render
