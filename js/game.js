@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const E = window.LPO, D = E.D;
-const VERSION = '1.1.1', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
+const VERSION = '1.1.2', SAVE_KEY = 'lostproperty.v1', BACKUP_KEY = 'lostproperty.v1.backup';
 // The first week is free; the rest of the season is one Google Play purchase (js/billing.js).
 const BILL = window.createBilling({ storageKey: 'lostproperty.unlock', productId: 'full_unlock' });
 let unlockReason = null;
